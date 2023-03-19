@@ -1,33 +1,27 @@
-# Base FastAPI
-from fastapi import FastAPI
-# pydantic BaseModel
-from pydantic import BaseModel
-# Response types
+from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
-# Cookies etc
-from fastapi import Cookie
-# Response
-from fastapi import Response
 
 
 app = FastAPI()
 
 
-class Image(BaseModel):
-    url: str
-    name: str
+class ErrorHandler(Exception):
+    def __init__(self, name: str):
+        self.name = name
 
 
-class Base(BaseModel):
-    name: str
-    old: int
-    etc: set[str] = []
-    image: Image
+# noinspection PyUnusedLocal
+@app.exception_handler(ErrorHandler)
+async def handler(request: Request, exc: ErrorHandler):
+    return JSONResponse(
+        status_code=404,
+        content={"ups": f"an error"}
+    )
 
 
-@app.get("/test")
-def api(ads_id: str | None = Cookie(default=None)) -> Response:
-    return JSONResponse(content={"hi": ads_id})
+@app.get("/test/{arg}")
+async def api(arg):
+    return {"arg1": arg}
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -39,12 +33,19 @@ def read_root():
                 </head>
                 <body>
                     <h1>Rock paper scissor api</h1>
+                    <a href="/youtube">Youtube</a><br>
+                    <a href="/discord">Discord</a>
+                    
                 </body>
             </html>
             """
 
 
 @app.get("/discord", response_class=RedirectResponse)
-def read_root():
+def discord():
     return "https://discord.gg/v9D5VD4Rfp"
 
+
+@app.get("/youtube", response_class=RedirectResponse)
+def youtube():
+    return "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
