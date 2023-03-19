@@ -1,30 +1,34 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, FileResponse
+from enum import Enum
 
 
 app = FastAPI()
 
 
-class ErrorHandler(Exception):
-    def __init__(self, name: str):
-        self.name = name
+class Tags(Enum):
+    user = "user",
+    api = "api",
+    redirect = "redirect",
+    style = "style"
 
 
-# noinspection PyUnusedLocal
-@app.exception_handler(ErrorHandler)
-async def handler(request: Request, exc: ErrorHandler):
-    return JSONResponse(
-        status_code=404,
-        content={"ups": f"an error"}
-    )
-
-
-@app.get("/test/{arg}")
+@app.post("/test/{arg}",
+          response_class=JSONResponse,
+          tags=[Tags.api],
+          summary="API",
+          description="the api website with post",
+          response_description="api")
 async def api(arg):
     return {"arg1": arg}
 
 
-@app.get("/", response_class=HTMLResponse)
+@app.get("/",
+         response_class=HTMLResponse,
+         tags=[Tags.user],
+         summary="user main page",
+         description="the user page with get",
+         response_description="HTML main page")
 def read_root():
     return f"""
             <html>
@@ -41,16 +45,31 @@ def read_root():
             """
 
 
-@app.get("/discord", response_class=RedirectResponse)
+@app.get("/discord",
+         response_class=RedirectResponse,
+         tags=[Tags.user, Tags.redirect],
+         summary="redirect to discord",
+         description="redirect to the rock-paper-scissor-api server",
+         response_description="discord server invite URl redirect")
 def discord():
     return "https://discord.gg/v9D5VD4Rfp"
 
 
-@app.get("/youtube", response_class=RedirectResponse)
+@app.get("/youtube",
+         response_class=RedirectResponse,
+         tags=[Tags.user, Tags.redirect],
+         summary="redirect to youtube",
+         description="redirect to the youtube channel",
+         response_description="youtube URL redirect")
 def youtube():
     return "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
 
 
-@app.get("/favicon.ico", include_in_schema=False)
+@app.get("/favicon.ico",
+         response_class=FileResponse,
+         tags=[Tags.style],
+         summary="the favicon",
+         description="the favicon for the page",
+         response_description="favicon")
 def favicon():
     return FileResponse("favicon")
