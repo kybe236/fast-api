@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, FileResponse
 
 
 app = FastAPI()
@@ -49,3 +49,8 @@ def discord():
 @app.get("/youtube", response_class=RedirectResponse)
 def youtube():
     return "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon():
+    return FileResponse("favicon")
