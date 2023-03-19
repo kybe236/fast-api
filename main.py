@@ -1,7 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, FileResponse
 from enum import Enum
-
+from typing import Annotated
 
 app = FastAPI()
 
@@ -13,14 +13,14 @@ class Tags(Enum):
     style = "style"
 
 
-@app.post("/test/{arg}",
+@app.post("/api",
           response_class=JSONResponse,
           tags=[Tags.api],
           summary="API",
           description="the api website with post",
           response_description="api")
-async def api(arg):
-    return {"arg1": arg}
+async def api(q: Annotated[str | None, Query(max_length=50)] = None):
+    return {"arg1": q}
 
 
 @app.get("/",
