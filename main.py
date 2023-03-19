@@ -29,7 +29,7 @@ async def api(q: Annotated[str | None, Query(max_length=50)] = None):
          summary="user main page",
          description="the user page with get",
          response_description="HTML main page")
-def read_root():
+async def read_root():
     return f"""
             <html>
                 <head>
@@ -51,7 +51,7 @@ def read_root():
          summary="redirect to discord",
          description="redirect to the rock-paper-scissor-api server",
          response_description="discord server invite URl redirect")
-def discord():
+async def discord():
     return "https://discord.gg/v9D5VD4Rfp"
 
 
@@ -61,7 +61,7 @@ def discord():
          summary="redirect to youtube",
          description="redirect to the youtube channel",
          response_description="youtube URL redirect")
-def youtube():
+async def youtube():
     return "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
 
 
@@ -71,5 +71,5 @@ def youtube():
          summary="the favicon",
          description="the favicon for the page",
          response_description="favicon")
-def favicon():
+async def favicon():
     return FileResponse("favicon")
