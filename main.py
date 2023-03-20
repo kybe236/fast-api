@@ -1,16 +1,11 @@
 from fastapi import FastAPI, Query, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, FileResponse
-from enum import Enum
 from typing import Annotated
+from redirect import router
+from values import Tags
 
 app = FastAPI()
-
-
-class Tags(Enum):
-    user = "user",
-    api = "api",
-    redirect = "redirect",
-    style = "style"
+app.include_router(router)
 
 
 @app.post("/api",
