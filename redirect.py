@@ -1,13 +1,12 @@
 from fastapi import APIRouter
 from fastapi.responses import RedirectResponse
-from values import Tags
 
 router = APIRouter()
 
 
 @router.get("/discord",
             response_class=RedirectResponse,
-            tags=[Tags.user, Tags.redirect],
+            tags=["user", "redirect"],
             summary="redirect to discord",
             description="redirect to the rock-paper-scissor-api server",
             response_description="discord server invite URl redirect")
@@ -17,7 +16,7 @@ async def discord():
 
 @router.get("/youtube",
             response_class=RedirectResponse,
-            tags=[Tags.user, Tags.redirect],
+            tags=["user", "redirect"],
             summary="redirect to youtube",
             description="redirect to the youtube channel",
             response_description="youtube URL redirect")

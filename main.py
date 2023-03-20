@@ -2,15 +2,22 @@ from fastapi import FastAPI, Query, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, FileResponse
 from typing import Annotated
 from redirect import router
-from values import Tags
+from values import *
+import uvicorn
 
-app = FastAPI()
+
+app = FastAPI(title="Rock-Paper-Scissor-API",
+              description=api_description,
+              version="0.0.1",
+              contact=api_contact,
+              license_info=api_license_info,
+              openapi_tags=tags_metadata)
 app.include_router(router)
 
 
 @app.post("/api",
           response_class=JSONResponse,
-          tags=[Tags.api],
+          tags=["api"],
           summary="API",
           description="the api website with post",
           response_description="api")
@@ -20,7 +27,7 @@ async def api(name: Annotated[str, Query(max_length=20, min_length=2)]):
 
 @app.get("/",
          response_class=HTMLResponse,
-         tags=[Tags.user],
+         tags=["user"],
          summary="user main page",
          description="the user page with get",
          response_description="HTML main page")
@@ -42,9 +49,14 @@ async def read_root():
 
 @app.get("/favicon.ico",
          response_class=FileResponse,
-         tags=[Tags.style],
+         tags=["style"],
          summary="the favicon",
          description="the favicon for the page",
          response_description="favicon")
 async def favicon():
     return FileResponse("favicon")
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
+
