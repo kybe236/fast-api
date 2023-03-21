@@ -2,7 +2,7 @@ from typing import Annotated
 
 import uvicorn
 from fastapi import FastAPI, Query
-from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, ORJSONResponse
 
 from redirect import router
 from values import *
@@ -12,19 +12,20 @@ app = FastAPI(title="Rock-Paper-Scissor-API",
               version="0.0.1",
               contact=api_contact,
               license_info=api_license_info,
-              openapi_tags=tags_metadata)
+              openapi_tags=tags_metadata,
+              default_response_class=ORJSONResponse)
 app.include_router(router,
                    prefix="/redirect")
 
 
 @app.post("/api",
-          response_class=JSONResponse,
+          response_class=ORJSONResponse,
           tags=["api"],
           summary="API",
           description="the api website with post",
           response_description="api")
-async def api(name: Annotated[str, Query(max_length=20, min_length=2)]):
-    return {"arg1": name}
+async def api():
+    return {"arg1": "😊"}
 
 
 @app.get("/",

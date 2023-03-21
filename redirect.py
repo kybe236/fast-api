@@ -6,6 +6,7 @@ router = APIRouter()
 
 @router.get("/discord",
             response_class=RedirectResponse,
+            status_code=308,
             tags=["user", "redirect"],
             summary="redirect to discord",
             description="redirect to the rock-paper-scissor-api server",
@@ -16,6 +17,7 @@ async def discord():
 
 @router.get("/youtube",
             response_class=RedirectResponse,
+            status_code=308,
             tags=["user", "redirect"],
             summary="redirect to youtube",
             description="redirect to the youtube channel",
