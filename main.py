@@ -1,10 +1,11 @@
+from typing import Annotated
+
+import uvicorn
 from fastapi import FastAPI, Query
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
-from typing import Annotated
+
 from redirect import router
 from values import *
-import uvicorn
-
 
 app = FastAPI(title="Rock-Paper-Scissor-API",
               description=api_description,
@@ -59,4 +60,3 @@ async def favicon():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=80, log_level="info")
-
