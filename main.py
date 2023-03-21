@@ -13,7 +13,8 @@ app = FastAPI(title="Rock-Paper-Scissor-API",
               contact=api_contact,
               license_info=api_license_info,
               openapi_tags=tags_metadata)
-app.include_router(router)
+app.include_router(router,
+                   prefix="/redirect")
 
 
 @app.post("/api",
@@ -40,8 +41,8 @@ async def read_root():
                 </head>
                 <body>
                     <h1>Rock paper scissor api</h1>
-                    <a href="/youtube">Youtube</a><br>
-                    <a href="/discord">Discord</a>
+                    <a href="/redirect/youtube">Youtube</a><br>
+                    <a href="/redirect/discord">Discord</a>
                     
                 </body>
             </html>
