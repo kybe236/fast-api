@@ -1,5 +1,5 @@
-from fastapi import FastAPI, Query, Depends
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, FileResponse
+from fastapi import FastAPI, Query
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from typing import Annotated
 from redirect import router
 from values import *
@@ -58,5 +58,5 @@ async def favicon():
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
+    uvicorn.run(app, host="0.0.0.0", port=80, log_level="info")
 
