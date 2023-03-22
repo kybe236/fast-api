@@ -14,7 +14,8 @@ app = FastAPI(title="Rock-Paper-Scissor-API",
               license_info=api_license_info,
               openapi_tags=tags_metadata,
               default_response_class=ORJSONResponse)
-app.include_router(router)
+app.include_router(router,
+                   prefix="/redirect")
 
 
 @app.post("/api",
