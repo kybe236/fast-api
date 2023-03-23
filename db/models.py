@@ -1,13 +1,12 @@
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
-from sqlalchemy.orm import relationship
 
 from .database import Base
 
 
-class Games(Base):
-    __tablename__ = "games"
+class Game(Base):
+    __tablename__ = "users"
 
-    game_code = Column(String, primary_key=True, index=True)
-    player1_win = Column(Integer)
-    player2_win = Column(Integer)
-    last_winner = Column(Integer)
+    code = Column(Integer, unique=True, primary_key=True)
+    player1 = Column(Integer, default=0)
+    player2 = Column(Integer, default=0)
+    last_winner = Column(Integer, default=-1)

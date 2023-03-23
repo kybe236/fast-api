@@ -4,12 +4,13 @@ from sqlalchemy.orm import Session
 import uvicorn
 from fastapi import FastAPI, Query, Depends
 from fastapi.responses import HTMLResponse, FileResponse
+import sqlalchemy.exc
 
 from redirect import router
 from values import *
 
-from db import models
-from db.database import SessionLocal, engine
+from db import models, database
+from db.database import engine, SessionLocal
 
 
 app = FastAPI(title="Rock-Paper-Scissor-API",
@@ -33,30 +34,40 @@ def get_db():
         db.close()
 
 
-# noinspection PyTypeChecker
 @app.get("/{code}/",
          tags=["api"],
          summary="API",
          description="the api website with post",
          response_description="api")
-async def api(code: int, action: Annotated[str | None, Query(min_length=1, max_length=25)],
-              db: Session = Depends(get_db)):
-    if action == "create":
-        code_open = db.query(models.Games).filter(models.Games.game_code == code).first()
-        if code_open is not None:
-            return {"used": code}
-        db_game = models.Games(game_code=code, player1_win=0, player2_win=0, last_winner=-1)
-        db.add(db_game)
-        db.commit()
-        db.refresh(db_game)
-    if action == "join":
-        code_open = db.query(models.Games).filter(models.Games.game_code == code).first()
-        if code_open is None:
+def api(code: int, action: Annotated[str | None, Query()],
+        db: Session = Depends(get_db)):
+    if action == "test":
+        game = db.query(models.Game).filter(models.Game.code == "1").first()
+
+        print(game)
+
+        if game is None:
             return {"unused": code}
+        return {"used": code}
+
+    if action == "create":
+        game = db.query(models.Game).filter(models.Game.code == "1").first()
+
+        if game is not None:
+            return {"used": code}
+
+        try:
+            db_user = models.Game(code=1)
+            db.add(db_user)
+            db.commit()
+            db.refresh(db_user)
+        except sqlalchemy.exc.IntegrityError as exception:
+            db.rollback()
+            return {"already_created": True, "exception": exception}
 
 
+    if action == "play":
 
-    return {"action": "b"}
 
 
 @app.get("/",
