@@ -1,16 +1,14 @@
 from typing import Annotated
-from sqlalchemy.orm import Session
 
 import uvicorn
 from fastapi import FastAPI, Query, Depends
 from fastapi.responses import HTMLResponse, FileResponse
-
-from redirect import router
-from values import *
+from sqlalchemy.orm import Session
 
 from db import models
 from db.database import SessionLocal, engine
-
+from redirect import router
+from values import *
 
 app = FastAPI(title="Rock-Paper-Scissor-API",
               description=api_description,
@@ -53,8 +51,6 @@ async def api(code: int, action: Annotated[str | None, Query(min_length=1, max_l
         code_open = db.query(models.Games).filter(models.Games.game_code == code).first()
         if code_open is None:
             return {"unused": code}
-
-
 
     return {"action": "b"}
 

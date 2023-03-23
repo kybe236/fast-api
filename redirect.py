@@ -24,4 +24,3 @@ async def discord():
             response_description="youtube URL redirect")
 async def youtube():
     return "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-
