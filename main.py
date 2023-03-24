@@ -66,27 +66,18 @@ def api(code: Annotated[int, Path(le=111111111111111200)], action: Annotated[str
             raise HTTPException(status_code=409)
         return {"created": code}
 
+    # play logic
     if action == "play":
         game = db.query(models.Game).filter(models.Game.code == code).first()
 
         if game is None:
             raise HTTPException(status_code=404)
 
-        print(game.token1)
+        # if no token in db
         if game.token1 is None:
-            try:
-                game.token1 = token
-                db.commit()
-            except sqlalchemy.exc.IntegrityError as exception:
-                logging.debug(exception)
-                db.rollback()
-                return {"token1": "not_set"}
-
-        print(game.token2)
-        if game.token2 is None:
-            if token != game.token1:
+            if token is not None:
                 try:
-                    game.token2 = token
+                    game.token1 = token
                     db.commit()
                 except sqlalchemy.exc.IntegrityError as exception:
                     logging.debug(exception)
@@ -94,24 +85,38 @@ def api(code: Annotated[int, Path(le=111111111111111200)], action: Annotated[str
                     return {"token1": "not_set"}
                 finally:
                     db.close()
-                    return {"set_token": token}
+
+        # if no token in db
+        if game.token2 is None:
+            if token is not None:
+                if token != game.token1:
+                    try:
+                        game.token2 = token
+                        db.commit()
+                    except sqlalchemy.exc.IntegrityError as exception:
+                        logging.debug(exception)
+                        db.rollback()
+                        return {"token1": "not_set"}
+                    finally:
+                        db.close()
 
         if token == game.token1:
-            if winner is None:
-                return {"no": "token"}
+            if game.next_picker == 1:
+                if winner is None:
+                    return {"no": "token"}
 
-            if winner == 0:
-                return {"draw": "confirmed"}
-            try:
-                game.player1_score = game.player1_score + 1
-                db.commit()
-            except sqlalchemy.exc.IntegrityError as exception:
-                logging.error(exception)
-                raise HTTPException(status_code=500)
-            finally:
-                db.rollback()
-                db.close()
-                return {"player1": "confirmed"}
+                if winner == 0:
+                    return {"draw": "confirmed"}
+                try:
+                    game.player1_score = game.player1_score + 1
+                    db.commit()
+                except sqlalchemy.exc.IntegrityError as exception:
+                    logging.error(exception)
+                    raise HTTPException(status_code=500)
+                finally:
+                    db.rollback()
+                    db.close()
+                    return {"player1": "confirmed"}
 
         if token == game.token2:
             if winner is None:
