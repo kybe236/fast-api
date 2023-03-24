@@ -1,18 +1,16 @@
+import logging
 from typing import Annotated
-from sqlalchemy.orm import Session
 
+import sqlalchemy.exc
 import uvicorn
 from fastapi import FastAPI, Query, Depends, Path, HTTPException
 from fastapi.responses import HTMLResponse, FileResponse
-import sqlalchemy.exc
-
-from redirect import router
-from values import *
+from sqlalchemy.orm import Session
 
 from db import models
 from db.database import engine, SessionLocal
-
-import logging
+from redirect import router
+from values import *
 
 app = FastAPI(title="Rock-Paper-Scissor-API",
               description=api_description,
@@ -41,8 +39,8 @@ def get_db():
          description="the api website with post",
          response_description="api")
 def api(code: Annotated[int, Path(le=111111111111111200)], action: Annotated[str | None, Query(max_length=20)],
-        opt: int = None,
-        opt2: int = None,
+        token: int = None,
+        winner: int = None,
         db: Session = Depends(get_db)):
     if action == "test":
         game = db.query(models.Game).filter(models.Game.code == code).first()
@@ -77,27 +75,36 @@ def api(code: Annotated[int, Path(le=111111111111111200)], action: Annotated[str
         print(game.token1)
         if game.token1 is None:
             try:
-                game.token1 = opt
+                game.token1 = token
                 db.commit()
             except sqlalchemy.exc.IntegrityError as exception:
                 logging.debug(exception)
                 db.rollback()
                 return {"token1": "not_set"}
 
+        print(game.token2)
         if game.token2 is None:
-            try:
-                game.token2 = opt
-                db.commit()
-            except sqlalchemy.exc.IntegrityError as exception:
-                logging.debug(exception)
-                db.rollback()
-                return {"token1": "not_set"}
+            if token != game.token1:
+                try:
+                    game.token2 = token
+                    db.commit()
+                except sqlalchemy.exc.IntegrityError as exception:
+                    logging.debug(exception)
+                    db.rollback()
+                    return {"token1": "not_set"}
+                finally:
+                    db.close()
+                    return {"set_token": token}
 
-        if opt == game.token1:
-            if opt2 == 0:
+        if token == game.token1:
+            if winner is None:
+                return {"no": "token"}
+
+            if winner == 0:
                 return {"draw": "confirmed"}
             try:
                 game.player1_score = game.player1_score + 1
+                db.commit()
             except sqlalchemy.exc.IntegrityError as exception:
                 logging.error(exception)
                 raise HTTPException(status_code=500)
@@ -106,12 +113,16 @@ def api(code: Annotated[int, Path(le=111111111111111200)], action: Annotated[str
                 db.close()
                 return {"player1": "confirmed"}
 
-        if opt == game.token2:
-            if opt2 == 0:
+        if token == game.token2:
+            if winner is None:
+                return {"no": "token"}
+            if winner == 0:
                 return {"draw": "confirmed"}
 
             try:
                 game.player2_score = game.player2_score + 1
+                game.next_picker = 1
+                db.commit()
             except sqlalchemy.exc.IntegrityError as exception:
                 logging.error(exception)
                 raise HTTPException(status_code=500)
