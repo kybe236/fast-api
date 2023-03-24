@@ -2,7 +2,7 @@ from typing import Annotated
 from sqlalchemy.orm import Session
 
 import uvicorn
-from fastapi import FastAPI, Query, Depends
+from fastapi import FastAPI, Query, Depends, Path
 from fastapi.responses import HTMLResponse, FileResponse
 import sqlalchemy.exc
 
@@ -39,11 +39,11 @@ def get_db():
          summary="API",
          description="the api website with post",
          response_description="api")
-def api(code: int, action: Annotated[str | None, Query()],
+def api(code: Annotated[int, Path(le=111111111111111200)], action: Annotated[str | None, Query(max_length=20)],
         opt: int = None,
         db: Session = Depends(get_db)):
     if action == "test":
-        game = db.query(models.Game).filter(models.Game.code == "1").first()
+        game = db.query(models.Game).filter(models.Game.code == code).first()
 
         print(game)
 
@@ -52,7 +52,7 @@ def api(code: int, action: Annotated[str | None, Query()],
         return {"used": code}
 
     if action == "create":
-        game = db.query(models.Game).filter(models.Game.code == "1").first()
+        game = db.query(models.Game).filter(models.Game.code == code).first()
 
         if game is not None:
             return {"used": code}
@@ -68,7 +68,7 @@ def api(code: int, action: Annotated[str | None, Query()],
         return {"created": code}
 
     if action == "play":
-        game = db.query(models.Game).filter(models.Game.code == "1").first()
+        game = db.query(models.Game).filter(models.Game.code == code).first()
 
         if game is None:
             return {"unused": code}
@@ -79,7 +79,16 @@ def api(code: int, action: Annotated[str | None, Query()],
                 db.commit()
             except sqlalchemy.exc.IntegrityError as exception:
                 db.rollback()
-                return {"token1": "used", "exception": exception}
+                return {"token1": "not_set", "exception": exception}
+        if game.token2 is None:
+            try:
+                game.token2 = opt
+                db.commit()
+            except sqlalchemy.exc.IntegrityError as exception:
+                db.rollback()
+                return {"token1": "not_set", "exception": exception}
+
+
 
 
 @app.get("/",
