@@ -33,6 +33,34 @@ def get_db():
         db.close()
 
 
+def match_win(player1, player2):
+    match player1:
+        case 1:
+            match player2:
+                case 1:
+                    return 0
+                case 2:
+                    return 2
+                case 3:
+                    return 1
+        case 2:
+            match player2:
+                case 1:
+                    return 0
+                case 2:
+                    return 2
+                case 3:
+                    return 1
+        case 3:
+            match player2:
+                case 1:
+                    return 0
+                case 2:
+                    return 2
+                case 3:
+                    return 1
+
+
 @app.get("/{code}/",
          tags=["api"],
          summary="API",
@@ -40,8 +68,14 @@ def get_db():
          response_description="api")
 def api(code: Annotated[int, Path(le=111111111111111200)], action: Annotated[str | None, Query(max_length=20)],
         token: int = None,
-        winner: int = None,
+        pick: int = None,
         db: Session = Depends(get_db)):
+    if action == "last_winner":
+        game = db.query(models.Game).filter(models.Game.code == code).first()
+        winner = match_win(game.player1, game.player2)
+
+        return {"last_winner": winner}
+
     if action == "test":
         game = db.query(models.Game).filter(models.Game.code == code).first()  # type: ignore[arg-type]
 
@@ -102,39 +136,31 @@ def api(code: Annotated[int, Path(le=111111111111111200)], action: Annotated[str
 
         if token == game.token1:
             if game.next_picker == 1:
-                if winner is None:
-                    return {"no": "token"}
-
-                if winner == 0:
-                    return {"draw": "confirmed"}
+                if pick is None:
+                    return {"specify_needed": "pick"}
                 try:
-                    game.player1_score = game.player1_score + 1
+                    game.player1 = pick
                     db.commit()
                 except sqlalchemy.exc.IntegrityError as exception:
-                    logging.error(exception)
-                    raise HTTPException(status_code=500)
-                finally:
+                    logging.debug(exception)
                     db.rollback()
+                    return {"sql": "error"}
+                finally:
                     db.close()
-                    return {"player1": "confirmed"}
 
         if token == game.token2:
-            if winner is None:
-                return {"no": "token"}
-            if winner == 0:
-                return {"draw": "confirmed"}
-
-            try:
-                game.player2_score = game.player2_score + 1
-                game.next_picker = 1
-                db.commit()
-            except sqlalchemy.exc.IntegrityError as exception:
-                logging.error(exception)
-                raise HTTPException(status_code=500)
-            finally:
-                db.rollback()
-                db.close()
-                return {"player2": "confirmed"}
+            if game.next_picker == 2:
+                if pick is None:
+                    return {"specify_needed"}
+                try:
+                    game.player2 = pick
+                    db.commit()
+                except sqlalchemy.exc.IntegrityError as exception:
+                    logging.debug(exception)
+                    db.rollback()
+                    return {"sql": "error"}
+                finally:
+                    db.close()
 
 
 @app.get("/",

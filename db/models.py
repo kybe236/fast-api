@@ -14,3 +14,4 @@ class Game(Base):
     token2 = Column(Integer, default=None)
     player1 = Column(Integer, default=None)
     player2 = Column(Integer, default=None)
+    last_winner = Column(Integer, default=-1)
