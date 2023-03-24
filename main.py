@@ -2,16 +2,17 @@ from typing import Annotated
 from sqlalchemy.orm import Session
 
 import uvicorn
-from fastapi import FastAPI, Query, Depends, Path
+from fastapi import FastAPI, Query, Depends, Path, HTTPException
 from fastapi.responses import HTMLResponse, FileResponse
 import sqlalchemy.exc
 
 from redirect import router
 from values import *
 
-from db import models, database
+from db import models
 from db.database import engine, SessionLocal
 
+import logging
 
 app = FastAPI(title="Rock-Paper-Scissor-API",
               description=api_description,
@@ -41,11 +42,10 @@ def get_db():
          response_description="api")
 def api(code: Annotated[int, Path(le=111111111111111200)], action: Annotated[str | None, Query(max_length=20)],
         opt: int = None,
+        opt2: int = None,
         db: Session = Depends(get_db)):
     if action == "test":
         game = db.query(models.Game).filter(models.Game.code == code).first()
-
-        print(game)
 
         if game is None:
             return {"unused": code}
@@ -63,32 +63,62 @@ def api(code: Annotated[int, Path(le=111111111111111200)], action: Annotated[str
             db.commit()
             db.refresh(db_user)
         except sqlalchemy.exc.IntegrityError as exception:
+            logging.debug(exception)
             db.rollback()
-            return {"used": True, "exception": exception}
+            raise HTTPException(status_code=409)
         return {"created": code}
 
     if action == "play":
         game = db.query(models.Game).filter(models.Game.code == code).first()
 
         if game is None:
-            return {"unused": code}
+            raise HTTPException(status_code=404)
 
+        print(game.token1)
         if game.token1 is None:
             try:
                 game.token1 = opt
                 db.commit()
             except sqlalchemy.exc.IntegrityError as exception:
+                logging.debug(exception)
                 db.rollback()
-                return {"token1": "not_set", "exception": exception}
+                return {"token1": "not_set"}
+
         if game.token2 is None:
             try:
                 game.token2 = opt
                 db.commit()
             except sqlalchemy.exc.IntegrityError as exception:
+                logging.debug(exception)
                 db.rollback()
-                return {"token1": "not_set", "exception": exception}
+                return {"token1": "not_set"}
 
+        if opt == game.token1:
+            if opt2 == 0:
+                return {"draw": "confirmed"}
+            try:
+                game.player1_score = game.player1_score + 1
+            except sqlalchemy.exc.IntegrityError as exception:
+                logging.error(exception)
+                raise HTTPException(status_code=500)
+            finally:
+                db.rollback()
+                db.close()
+                return {"player1": "confirmed"}
 
+        if opt == game.token2:
+            if opt2 == 0:
+                return {"draw": "confirmed"}
+
+            try:
+                game.player2_score = game.player2_score + 1
+            except sqlalchemy.exc.IntegrityError as exception:
+                logging.error(exception)
+                raise HTTPException(status_code=500)
+            finally:
+                db.rollback()
+                db.close()
+                return {"player2": "confirmed"}
 
 
 @app.get("/",
