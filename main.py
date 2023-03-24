@@ -43,14 +43,14 @@ def api(code: Annotated[int, Path(le=111111111111111200)], action: Annotated[str
         winner: int = None,
         db: Session = Depends(get_db)):
     if action == "test":
-        game = db.query(models.Game).filter(models.Game.code == code).first()
+        game = db.query(models.Game).filter(models.Game.code == code).first()  # type: ignore[arg-type]
 
         if game is None:
             return {"unused": code}
         return {"used": code}
 
     if action == "create":
-        game = db.query(models.Game).filter(models.Game.code == code).first()
+        game = db.query(models.Game).filter(models.Game.code == code).first()  # type: ignore[arg-type]
 
         if game is not None:
             return {"used": code}
@@ -68,7 +68,7 @@ def api(code: Annotated[int, Path(le=111111111111111200)], action: Annotated[str
 
     # play logic
     if action == "play":
-        game = db.query(models.Game).filter(models.Game.code == code).first()
+        game = db.query(models.Game).filter(models.Game.code == code).first()  # type: ignore[arg-type]
 
         if game is None:
             raise HTTPException(status_code=404)
