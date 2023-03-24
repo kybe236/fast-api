@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
+from sqlalchemy import Column, Integer
 
 from .database import Base
 
@@ -12,3 +12,5 @@ class Game(Base):
     next_picker = Column(Integer, default=None)
     token1 = Column(Integer, default=None)
     token2 = Column(Integer, default=None)
+    player1 = Column(Integer, default=None)
+    player2 = Column(Integer, default=None)
