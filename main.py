@@ -40,6 +40,7 @@ def get_db():
          description="the api website with post",
          response_description="api")
 def api(code: int, action: Annotated[str | None, Query()],
+        opt: int = None,
         db: Session = Depends(get_db)):
     if action == "test":
         game = db.query(models.Game).filter(models.Game.code == "1").first()
@@ -57,17 +58,28 @@ def api(code: int, action: Annotated[str | None, Query()],
             return {"used": code}
 
         try:
-            db_user = models.Game(code=1)
+            db_user = models.Game(code=code)
             db.add(db_user)
             db.commit()
             db.refresh(db_user)
         except sqlalchemy.exc.IntegrityError as exception:
             db.rollback()
-            return {"already_created": True, "exception": exception}
-
+            return {"used": True, "exception": exception}
+        return {"created": code}
 
     if action == "play":
+        game = db.query(models.Game).filter(models.Game.code == "1").first()
 
+        if game is None:
+            return {"unused": code}
+
+        if game.token1 is None:
+            try:
+                game.token1 = opt
+                db.commit()
+            except sqlalchemy.exc.IntegrityError as exception:
+                db.rollback()
+                return {"token1": "used", "exception": exception}
 
 
 @app.get("/",
