@@ -1,12 +1,14 @@
+import logging
 from typing import Annotated
 
+import sqlalchemy.exc
 import uvicorn
-from fastapi import FastAPI, Query, Depends
+from fastapi import FastAPI, Query, Depends, Path, HTTPException
 from fastapi.responses import HTMLResponse, FileResponse
 from sqlalchemy.orm import Session
 
 from db import models
-from db.database import SessionLocal, engine
+from db.database import engine, SessionLocal
 from redirect import router
 from values import *
 
@@ -31,28 +33,103 @@ def get_db():
         db.close()
 
 
-# noinspection PyTypeChecker
 @app.get("/{code}/",
          tags=["api"],
          summary="API",
          description="the api website with post",
          response_description="api")
-async def api(code: int, action: Annotated[str | None, Query(min_length=1, max_length=25)],
-              db: Session = Depends(get_db)):
-    if action == "create":
-        code_open = db.query(models.Games).filter(models.Games.game_code == code).first()
-        if code_open is not None:
-            return {"used": code}
-        db_game = models.Games(game_code=code, player1_win=0, player2_win=0, last_winner=-1)
-        db.add(db_game)
-        db.commit()
-        db.refresh(db_game)
-    if action == "join":
-        code_open = db.query(models.Games).filter(models.Games.game_code == code).first()
-        if code_open is None:
-            return {"unused": code}
+def api(code: Annotated[int, Path(le=111111111111111200)], action: Annotated[str | None, Query(max_length=20)],
+        token: int = None,
+        winner: int = None,
+        db: Session = Depends(get_db)):
+    if action == "test":
+        game = db.query(models.Game).filter(models.Game.code == code).first()
 
-    return {"action": "b"}
+        if game is None:
+            return {"unused": code}
+        return {"used": code}
+
+    if action == "create":
+        game = db.query(models.Game).filter(models.Game.code == code).first()
+
+        if game is not None:
+            return {"used": code}
+
+        try:
+            db_user = models.Game(code=code)
+            db.add(db_user)
+            db.commit()
+            db.refresh(db_user)
+        except sqlalchemy.exc.IntegrityError as exception:
+            logging.debug(exception)
+            db.rollback()
+            raise HTTPException(status_code=409)
+        return {"created": code}
+
+    if action == "play":
+        game = db.query(models.Game).filter(models.Game.code == code).first()
+
+        if game is None:
+            raise HTTPException(status_code=404)
+
+        print(game.token1)
+        if game.token1 is None:
+            try:
+                game.token1 = token
+                db.commit()
+            except sqlalchemy.exc.IntegrityError as exception:
+                logging.debug(exception)
+                db.rollback()
+                return {"token1": "not_set"}
+
+        print(game.token2)
+        if game.token2 is None:
+            if token != game.token1:
+                try:
+                    game.token2 = token
+                    db.commit()
+                except sqlalchemy.exc.IntegrityError as exception:
+                    logging.debug(exception)
+                    db.rollback()
+                    return {"token1": "not_set"}
+                finally:
+                    db.close()
+                    return {"set_token": token}
+
+        if token == game.token1:
+            if winner is None:
+                return {"no": "token"}
+
+            if winner == 0:
+                return {"draw": "confirmed"}
+            try:
+                game.player1_score = game.player1_score + 1
+                db.commit()
+            except sqlalchemy.exc.IntegrityError as exception:
+                logging.error(exception)
+                raise HTTPException(status_code=500)
+            finally:
+                db.rollback()
+                db.close()
+                return {"player1": "confirmed"}
+
+        if token == game.token2:
+            if winner is None:
+                return {"no": "token"}
+            if winner == 0:
+                return {"draw": "confirmed"}
+
+            try:
+                game.player2_score = game.player2_score + 1
+                game.next_picker = 1
+                db.commit()
+            except sqlalchemy.exc.IntegrityError as exception:
+                logging.error(exception)
+                raise HTTPException(status_code=500)
+            finally:
+                db.rollback()
+                db.close()
+                return {"player2": "confirmed"}
 
 
 @app.get("/",

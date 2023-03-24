@@ -1,12 +1,14 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
 
 from .database import Base
 
 
-class Games(Base):
+class Game(Base):
     __tablename__ = "games"
 
-    game_code = Column(String, primary_key=True, index=True)
-    player1_win = Column(Integer)
-    player2_win = Column(Integer)
-    last_winner = Column(Integer)
+    code = Column(Integer, unique=True, primary_key=True)
+    player1_score = Column(Integer, default=0)
+    player2_score = Column(Integer, default=0)
+    next_picker = Column(Integer, default=None)
+    token1 = Column(Integer, default=None)
+    token2 = Column(Integer, default=None)
