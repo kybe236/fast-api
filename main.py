@@ -71,10 +71,14 @@ def api(code: Annotated[int, Path(le=111111111111111200)], action: Annotated[str
         pick: int = None,
         db: Session = Depends(get_db)):
     if action == "last_winner":
-        game = db.query(models.Game).filter(models.Game.code == code).first()
-        winner = match_win(game.player1, game.player2)
-
-        return {"last_winner": winner}
+        try:
+            game = db.query(models.Game).filter(models.Game.code == code).first()
+            if game is not None:
+                winner = match_win(game.player1, game.player2)
+                return {"last_winner": winner}
+        except sqlalchemy.exc.IntegrityError as exception:
+            logging.debug(exception)
+            db.rollback()
 
     if action == "test":
         game = db.query(models.Game).filter(models.Game.code == code).first()  # type: ignore[arg-type]
@@ -140,27 +144,33 @@ def api(code: Annotated[int, Path(le=111111111111111200)], action: Annotated[str
                     return {"specify_needed": "pick"}
                 try:
                     game.player1 = pick
+                    game.next_picker = 2
                     db.commit()
+                    return {"player2": pick}
                 except sqlalchemy.exc.IntegrityError as exception:
                     logging.debug(exception)
                     db.rollback()
                     return {"sql": "error"}
                 finally:
                     db.close()
+            return {"player2": "picking"}
 
         if token == game.token2:
             if game.next_picker == 2:
                 if pick is None:
-                    return {"specify_needed"}
+                    return {"specify_needed": "pick"}
                 try:
                     game.player2 = pick
+                    game.next_picker = 1
                     db.commit()
+                    return {"player1": pick}
                 except sqlalchemy.exc.IntegrityError as exception:
                     logging.debug(exception)
                     db.rollback()
                     return {"sql": "error"}
                 finally:
                     db.close()
+            return {"player1": "picking"}
 
 
 @app.get("/",
