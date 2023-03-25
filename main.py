@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import logging
 from typing import Annotated
 
@@ -105,7 +106,7 @@ def api(code: Annotated[int, Path(le=111111111111111200)], action: Annotated[str
         return {"created": code}
 
     # play logic
-    if action == "play":
+    if action == "token":
         game = db.query(models.Game).filter(models.Game.code == code).first()  # type: ignore[arg-type]
 
         if game is None:
@@ -137,6 +138,11 @@ def api(code: Annotated[int, Path(le=111111111111111200)], action: Annotated[str
                         return {"token1": "not_set"}
                     finally:
                         db.close()
+    if action == "play":
+        game = db.query(models.Game).filter(models.Game.code == code).first()
+
+        if game is None:
+            raise HTTPException(status_code=404)
 
         if token == game.token1:
             if game.next_picker == 1:
