@@ -84,11 +84,10 @@ def api(code: Annotated[int, Path(le=111111111111111200)], action: Annotated[str
         try:
             game = db.query(models.Game).filter(models.Game.code == code).first()
             if game is not None:
-                if game.next_picker == 1:
-                    winner = match_win(game.player1, game.player2)
-                    game.last_winner = winner
-                    db.commit()
-                    return {"last_winner": winner}
+                winner = match_win(game.player1, game.player2)
+                game.last_winner = winner
+                db.commit()
+                return {"last_winner": winner}
         except sqlalchemy.exc.IntegrityError as exception:
             logging.debug(exception)
             db.rollback()
@@ -207,6 +206,13 @@ def api(code: Annotated[int, Path(le=111111111111111200)], action: Annotated[str
                     return {"sql": "error"}
 
             return {"player1": "picking"}
+    if action == "next":
+        try:
+            game = db.query(models.Game).filter(models.Game.code == code).first()  # type: ignore[arg-type]
+            return {"next": game.next_picker}
+        except Exception as ex:
+            logging.info(ex)
+            raise HTTPException(status_code=404)
 
 
 @app.get("/",
