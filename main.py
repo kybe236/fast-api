@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 import logging
-from typing import Annotated
-
 import sqlalchemy.exc
 import uvicorn
 from fastapi import FastAPI, Query, Depends, Path, HTTPException
 from fastapi.responses import HTMLResponse, FileResponse
 from sqlalchemy.orm import Session
+from typing import Annotated
 
 from db import models
 from db.database import engine, SessionLocal
@@ -27,6 +26,7 @@ models.Base.metadata.create_all(bind=engine)
 
 # Dependency
 def get_db():
+    logging.info("DB USED")
     db = SessionLocal()
     try:
         yield db
@@ -35,6 +35,7 @@ def get_db():
 
 
 def match_win(player1, player2):
+    logging.info("MATCHING WINNER")
     match player1:
         case 1:
             match player2:
@@ -72,6 +73,7 @@ def api(code: Annotated[int, Path(le=111111111111111200)], action: Annotated[str
         pick: int = None,
         db: Session = Depends(get_db)):
     if action == "last_winner":
+        logging.info(f"GETTING LAST WINNER FROM {code}")
         try:
             game = db.query(models.Game).filter(models.Game.code == code).first()
             if game is not None:
@@ -82,6 +84,7 @@ def api(code: Annotated[int, Path(le=111111111111111200)], action: Annotated[str
             db.rollback()
 
     if action == "test":
+        logging.info(f"TESTING IF USED {code}")
         game = db.query(models.Game).filter(models.Game.code == code).first()  # type: ignore[arg-type]
 
         if game is None:
@@ -89,6 +92,7 @@ def api(code: Annotated[int, Path(le=111111111111111200)], action: Annotated[str
         return {"used": code}
 
     if action == "create":
+        logging.info(f"CREATE {code}")
         game = db.query(models.Game).filter(models.Game.code == code).first()  # type: ignore[arg-type]
 
         if game is not None:
@@ -102,6 +106,7 @@ def api(code: Annotated[int, Path(le=111111111111111200)], action: Annotated[str
         except sqlalchemy.exc.IntegrityError as exception:
             logging.debug(exception)
             db.rollback()
+            logging.debug("ROLLBACK L=110")
             raise HTTPException(status_code=409)
         return {"created": code}
 
@@ -115,33 +120,37 @@ def api(code: Annotated[int, Path(le=111111111111111200)], action: Annotated[str
         # if no token in db
         if game.token1 is None:
             if token is not None:
-                try:
+                try:  # noqa
                     game.token1 = token
                     db.commit()
+                    logging.info(f"LOGGING RANDOM TOKEN PLAYER 1 {code}: {token}")  # noqa for duplicated code
                 except sqlalchemy.exc.IntegrityError as exception:
                     logging.debug(exception)
                     db.rollback()
-                    return {"token1": "not_set"}
-                finally:
-                    db.close()
+                    logging.debug(f"LOGGING RANDOM TOKEN PLAYER 2 FAILED {code}: {token}")  # noqa for duplicated code
+                    logging.info(f"DB SESSION CLOSED {code}: {token}")
+                    return {"token1": "not set"}
 
         # if no token in db
         if game.token2 is None:
             if token is not None:
                 if token != game.token1:
-                    try:
+                    try:  # noqa
                         game.token2 = token
                         db.commit()
+                        logging.info(f"LOGGING RANDOM TOKEN PLAYER 2 {code}: {token}")  # noqa for duplicated code
                     except sqlalchemy.exc.IntegrityError as exception:
                         logging.debug(exception)
                         db.rollback()
-                        return {"token1": "not_set"}
-                    finally:
-                        db.close()
+                        logging.debug(
+                            f"LOGGING RANDOM TOKEN PLAYER 2 FAILED {code}: {token}")  # noqa for duplicated code
+                        logging.info(f"DB SESSION CLOSED {code}: {token}")
+                        return {"token1": "not set"}
     if action == "play":
         game = db.query(models.Game).filter(models.Game.code == code).first()
 
         if game is None:
+            logging.debug("NO GAME OPEN")
             raise HTTPException(status_code=404)
 
         if token == game.token1:
@@ -152,13 +161,15 @@ def api(code: Annotated[int, Path(le=111111111111111200)], action: Annotated[str
                     game.player1 = pick
                     game.next_picker = 2
                     db.commit()
+                    logging.info(f"PLAYER 1 PICKED {code}: {pick}")
                     return {"player2": pick}
                 except sqlalchemy.exc.IntegrityError as exception:
                     logging.debug(exception)
                     db.rollback()
+                    logging.debug("SQL PICK ERROR")
+                    logging.info(f"DB SESSION CLOSED {code}: {token}")
                     return {"sql": "error"}
-                finally:
-                    db.close()
+
             return {"player2": "picking"}
 
         if token == game.token2:
@@ -169,13 +180,15 @@ def api(code: Annotated[int, Path(le=111111111111111200)], action: Annotated[str
                     game.player2 = pick
                     game.next_picker = 1
                     db.commit()
+                    logging.info(f"PLAYER 2 PICKED {code}: {pick}")
                     return {"player1": pick}
                 except sqlalchemy.exc.IntegrityError as exception:
                     logging.debug(exception)
                     db.rollback()
+                    logging.debug("SQL PICK ERROR")
+                    logging.info(f"DB SESSION CLOSED {code}: {token}")
                     return {"sql": "error"}
-                finally:
-                    db.close()
+
             return {"player1": "picking"}
 
 
@@ -186,6 +199,7 @@ def api(code: Annotated[int, Path(le=111111111111111200)], action: Annotated[str
          description="the user page with get",
          response_description="HTML main page")
 async def read_root():
+    logging.info("/ VISITED")
     return f"""
             <html>
                 <head>
@@ -208,6 +222,7 @@ async def read_root():
          description="the favicon for the page",
          response_description="favicon")
 async def favicon():
+    logging.info("FAVICON.ICO LOADED")
     return FileResponse("favicon")
 
 
