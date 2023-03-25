@@ -2,8 +2,10 @@
 import logging
 import sqlalchemy.exc
 import uvicorn
-from fastapi import FastAPI, Query, Depends, Path, HTTPException
+from fastapi import FastAPI, Query, Depends, Path, HTTPException, Request
 from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from typing import Annotated
 
@@ -11,6 +13,8 @@ from db import models
 from db.database import engine, SessionLocal
 from redirect import router
 from values import *
+
+logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(title="Rock-Paper-Scissor-API",
               description=api_description,
@@ -21,6 +25,9 @@ app = FastAPI(title="Rock-Paper-Scissor-API",
               debug=True)
 app.include_router(router,
                    prefix="/redirect")
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+templates = Jinja2Templates(directory="templates")
 models.Base.metadata.create_all(bind=engine)
 
 
@@ -77,11 +84,15 @@ def api(code: Annotated[int, Path(le=111111111111111200)], action: Annotated[str
         try:
             game = db.query(models.Game).filter(models.Game.code == code).first()
             if game is not None:
-                winner = match_win(game.player1, game.player2)
-                return {"last_winner": winner}
+                if game.next_picker == 1:
+                    winner = match_win(game.player1, game.player2)
+                    game.last_winner = winner
+                    db.commit()
+                    return {"last_winner": winner}
         except sqlalchemy.exc.IntegrityError as exception:
             logging.debug(exception)
             db.rollback()
+            logging.info("SQL ERROR L=96")
 
     if action == "test":
         logging.info(f"TESTING IF USED {code}")
@@ -115,10 +126,12 @@ def api(code: Annotated[int, Path(le=111111111111111200)], action: Annotated[str
         game = db.query(models.Game).filter(models.Game.code == code).first()  # type: ignore[arg-type]
 
         if game is None:
+            logging.info("NOTHING IN DB")
             raise HTTPException(status_code=404)
 
         # if no token in db
         if game.token1 is None:
+            logging.info("NO TOKEN1 IN DB")
             if token is not None:
                 try:  # noqa
                     game.token1 = token
@@ -133,8 +146,10 @@ def api(code: Annotated[int, Path(le=111111111111111200)], action: Annotated[str
 
         # if no token in db
         if game.token2 is None:
+            logging.info("NO TOKEN2 ON DB")
             if token is not None:
                 if token != game.token1:
+                    logging.info("NOT SAME AS TOKEN1")
                     try:  # noqa
                         game.token2 = token
                         db.commit()
@@ -146,6 +161,8 @@ def api(code: Annotated[int, Path(le=111111111111111200)], action: Annotated[str
                             f"LOGGING RANDOM TOKEN PLAYER 2 FAILED {code}: {token}")  # noqa for duplicated code
                         logging.info(f"DB SESSION CLOSED {code}: {token}")
                         return {"token1": "not set"}
+                logging.info("SAME AS TOKEN")
+
     if action == "play":
         game = db.query(models.Game).filter(models.Game.code == code).first()
 
@@ -198,21 +215,9 @@ def api(code: Annotated[int, Path(le=111111111111111200)], action: Annotated[str
          summary="user main page",
          description="the user page with get",
          response_description="HTML main page")
-async def read_root():
+async def read_root(request: Request):
     logging.info("/ VISITED")
-    return f"""
-            <html>
-                <head>
-                    <title>Rock paper scissor api</title>
-                </head>
-                <body>
-                    <h1>Rock paper scissor api</h1>
-                    <a href="/redirect/youtube">Youtube</a><br>
-                    <a href="/redirect/discord">Discord</a>
-                    
-                </body>
-            </html>
-            """
+    return templates.TemplateResponse("home.html", {"request": request})
 
 
 @app.get("/favicon.ico",
