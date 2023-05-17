@@ -25,7 +25,6 @@ app = FastAPI(title="Rock-Paper-Scissor-API",
               debug=True)
 app.include_router(router,
                    prefix="/redirect")
-app.mount("/static", StaticFiles(directory="static"), name="static")
 
 templates = Jinja2Templates(directory="templates")
 models.Base.metadata.create_all(bind=engine)
