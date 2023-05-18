@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 import logging
 import sqlalchemy.exc
 import uvicorn
@@ -65,18 +66,7 @@ def match_win(player1, player2):
                     return 0
                 case 2:
                     return 2
-                case 3:
-                    return 1
-
-
-@app.get("/{code}/",
-         tags=["api"],
-         summary="API",
-         description="the api website with post",
-         response_description="api")
-def api(code: Annotated[int, Path(le=111111111111111200)], action: Annotated[str | None, Query(max_length=20)],
-        token: int = None,
-        pick: int = None,
+                case 3:bin/bash python3
         db: Session = Depends(get_db)):
     if action == "last_winner":
         logging.info(f"GETTING LAST WINNER FROM {code}")
