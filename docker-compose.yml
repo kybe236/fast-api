@@ -1,5 +1,4 @@
 services:
-  devimage:
-    build: .
-    ports:
-      - "80:80"
+  build: .
+  ports:
+    - "80:80"
