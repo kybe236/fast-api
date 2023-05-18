@@ -1,4 +1,5 @@
 services:
-  build: .
-  ports:
-    - "80:80"
+  rps:
+    build: .
+    ports:
+      - "80:80"
