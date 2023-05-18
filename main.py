@@ -44,7 +44,7 @@ def get_db():
 def match_win(player1, player2):
     logging.info("MATCHING WINNER")
     match player1:
-        case 1:
+        case 1: #rock
             match player2:
                 case 1:
                     return 0
@@ -52,22 +52,22 @@ def match_win(player1, player2):
                     return 2
                 case 3:
                     return 1
-        case 2:
+        case 2: #paper
             match player2:
                 case 1:
-                    return 0
-                case 2:
                     return 2
+                case 2:
+                    return 0
                 case 3:
                     return 1
-        case 3:
+        case 3: #scissors
             match player2:
                 case 1:
-                    return 0
-                case 2:
                     return 2
-                case 3:
+                case 2:
                     return 1
+                case 3:
+                    return 0
 
 @app.get("/{code}/",
         tags=["api"],
